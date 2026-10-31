@@ -1,4 +1,4 @@
-# Server repository guidance
+# prj1_server repository guidance
 
 - This is an independent Java 25 repository using Gradle Kotlin DSL and the Gradle wrapper.
 - Keep the Java toolchain configured for version 25 in `build.gradle.kts`.

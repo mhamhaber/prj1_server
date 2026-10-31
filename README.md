@@ -1,4 +1,4 @@
-# server
+# prj1_server
 
 Independent Java 25 project using Gradle Kotlin DSL and JUnit 5.
 
