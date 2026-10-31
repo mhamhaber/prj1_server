@@ -1,8 +1,12 @@
 plugins {
-    java
+    application
 }
 
 version = "0.1.0-SNAPSHOT"
+
+application {
+    mainClass = "project1.server.HelloServer"
+}
 
 repositories {
     mavenCentral()
