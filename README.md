@@ -33,3 +33,8 @@ client's development proxy target).
 The React client fetches this endpoint through its Vite development proxy.
 The prototype binds to loopback only, has no authentication, and is not a
 production deployment setup. Stop it with Ctrl+C.
+
+The shutdown hook gives active requests up to three seconds to finish on Ctrl+C
+or SIGTERM. For a background development workflow without Gradle's interrupted
+`run` task message, use `scripts/start` and `scripts/stop` from the workspace
+root. They build the distribution, run Java directly, and manage both services.

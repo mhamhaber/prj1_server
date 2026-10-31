@@ -48,7 +48,10 @@ public final class HelloServer {
     public static void main(String[] args) throws IOException {
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
         var server = start(port);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(0)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down; allowing active requests up to 3 seconds to finish.");
+            server.stop(3);
+        }));
         System.out.println("Hello API listening on http://127.0.0.1:" + server.getAddress().getPort());
     }
 }
