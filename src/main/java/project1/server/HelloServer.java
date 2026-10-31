@@ -3,6 +3,7 @@ package project1.server;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 public final class HelloServer {
@@ -22,6 +23,21 @@ public final class HelloServer {
                 body = "{\"error\":\"Method not allowed\"}";
             } else {
                 status = 200;
+                String text = null;
+                String query = exchange.getRequestURI().getRawQuery();
+                try {
+                    if (query != null) {
+                        for (String parameter : query.split("&")) {
+                            String[] pair = parameter.split("=", 2);
+                            if (URLDecoder.decode(pair[0], StandardCharsets.UTF_8).equals("text")) {
+                                text = URLDecoder.decode(pair.length == 2 ? pair[1] : "", StandardCharsets.UTF_8);
+                                break;
+                            }
+                        }
+                    }
+                } catch (IllegalArgumentException invalidEncoding) {
+                    status = 400;
+                }
                 body = """
                         {
                           "eyebrow": "A little connection. A world of possibility.",
@@ -30,6 +46,18 @@ public final class HelloServer {
                           "source": "Java 25 server"
                         }
                         """;
+                if (status == 400) {
+                    body = "{\"error\":\"Invalid query encoding\"}";
+                } else if (text != null) {
+                    body = """
+                            {
+                              "eyebrow": "Your words, echoed by the server.",
+                              "title": "Your response",
+                              "message": %s,
+                              "source": "Java 25 server"
+                            }
+                            """.formatted(jsonString(text));
+                }
             }
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
@@ -43,6 +71,25 @@ public final class HelloServer {
         });
         server.start();
         return server;
+    }
+
+    private static String jsonString(String value) {
+        var escaped = new StringBuilder("\"");
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            switch (character) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                default -> {
+                    if (character < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) character));
+                    } else {
+                        escaped.append(character);
+                    }
+                }
+            }
+        }
+        return escaped.append('"').toString();
     }
 
     public static void main(String[] args) throws IOException {

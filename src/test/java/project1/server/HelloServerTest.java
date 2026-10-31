@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpServer;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -48,6 +50,42 @@ class HelloServerTest {
                     .POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
             assertEquals(405, response.statusCode());
             assertEquals("GET", response.headers().firstValue("Allow").orElseThrow());
+        }
+    }
+
+    @Test
+    void echoesTextWithUnicodeAndQueryCharacters() throws Exception {
+        String text = "  Hello & café + 世界 🌍 = ?  ";
+        try (var client = HttpClient.newHttpClient()) {
+            var uri = URI.create(endpoint + "?text=" + URLEncoder.encode(text, StandardCharsets.UTF_8));
+            var response = client.send(HttpRequest.newBuilder(uri).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("\"message\": \"" + text + "\""));
+            assertTrue(response.body().contains("\"title\": \"Your response\""));
+        }
+    }
+
+    @Test
+    void escapesJsonSpecialCharacters() throws Exception {
+        String text = "\"quoted\" \\ path\n\t\r\b\f\u0000";
+        try (var client = HttpClient.newHttpClient()) {
+            var uri = URI.create(endpoint + "?text=" + URLEncoder.encode(text, StandardCharsets.UTF_8));
+            var response = client.send(HttpRequest.newBuilder(uri).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains(
+                    "\"message\": \"\\\"quoted\\\" \\\\ path\\u000a\\u0009\\u000d\\u0008\\u000c\\u0000\""));
+        }
+    }
+
+    @Test
+    void echoesAnEmptyTextParameter() throws Exception {
+        try (var client = HttpClient.newHttpClient()) {
+            var response = client.send(HttpRequest.newBuilder(URI.create(endpoint + "?text=")).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("\"message\": \"\""));
         }
     }
 
